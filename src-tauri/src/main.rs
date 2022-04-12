@@ -10,12 +10,11 @@ use std::{
     path::Path,
 };
 
-use dotenv::dotenv;
 use image::{io::Reader, DynamicImage, ImageError, Rgba};
 use imageproc::drawing::draw_text_mut;
 use rusttype::{Font, Scale};
 use serde::{Deserialize, Serialize};
-use tauri::{InvokeError, Manager};
+use tauri::InvokeError;
 
 #[tauri::command]
 fn create_meme(app_handle: tauri::AppHandle, input: Input) -> Result<(), Error> {
@@ -112,7 +111,7 @@ impl Meme {
         let font = resource_dir.clone().add("/Nasa21-l23X.ttf");
         let mut reader = BufReader::new(File::open(font).expect("Error finding font"));
         let mut buffer = Vec::new();
-        reader.read_to_end(&mut buffer);
+        reader.read_to_end(&mut buffer)?;
         let font = Font::try_from_vec(buffer).unwrap();
 
         for i in 0..self.record.text_instances.len() {
