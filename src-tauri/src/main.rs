@@ -14,6 +14,7 @@ use image::{io::Reader, DynamicImage, ImageError, Rgba};
 use imageproc::drawing::draw_text_mut;
 use rusttype::{Font, Scale};
 use serde::{Deserialize, Serialize};
+use tauri::api::path::download_dir;
 use tauri::InvokeError;
 
 #[tauri::command]
@@ -24,13 +25,21 @@ fn create_meme(app_handle: tauri::AppHandle, input: Input) -> Result<(), Error> 
         .unwrap()
         .to_string_lossy()
         .to_string()
-        .replace("\\\\?\\", "");
+        .replace("\\\\?\\", "")
+        .add("/assets");
+    let save_path = download_dir()
+        .unwrap()
+        .to_string_lossy()
+        .to_string()
+        .replace("\\\\?\\", "")
+        .add(format!("/{}.jpg", input.name).as_str());
+
     println!("{}", resource_dir);
     let mut meme = Meme::new(input.text_input, input.name, &resource_dir)?;
     meme.apply_text(&resource_dir)?;
     meme.image
         .to_rgba8()
-        .save("meme.jpg")
+        .save(save_path)
         .expect("Error saving file");
 
     Ok(())

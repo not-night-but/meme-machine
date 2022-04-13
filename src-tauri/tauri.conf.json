@@ -1,7 +1,7 @@
 {
   "package": {
     "productName": "meme-machine",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "build": {
     "distDir": "../dist",
@@ -51,7 +51,18 @@
       "active": false
     },
     "allowlist": {
-      "all": true
+      "all": true,
+      "fs": {
+        "scope": [
+          "$RESOURCE/assets/*"
+        ]
+      },
+      "protocol": {
+        "asset": true,
+        "assetScope": [
+          "$RESOURCE/assets/*"
+        ]
+      }
     },
     "windows": [
       {
@@ -63,7 +74,7 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost"
     }
   }
 }
