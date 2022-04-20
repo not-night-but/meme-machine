@@ -1,40 +1,86 @@
 <template>
-  <div>Hello, I'm Meme machine!!</div>
+  <div class="page-wrapper with-navbar with-sidebar">
+    <div class="navbar">
+      <div class="navbar-content">
+        <button
+          class="btn btn-action menu"
+          type="button"
+          @click="toggleSidebar"
+        >
+          <img src="../public/menu.svg" alt="" />
+        </button>
+        <span class="navbar-brand">Meme Machine</span>
+        <span class="navbar-text text-monospace">v0.3.0</span>
+      </div>
+    </div>
+    <div class="sidebar">
+      <!-- <h5 class="sidebar-title">Meme Machine</h5> -->
+      <div class="sidebar-menu">
+        <a href="" class="sidebar-link active"> Create Meme </a>
+      </div>
+    </div>
+    <div class="content-wrapper text-light pt-5">
+      <div v-if="selected == null">
+        <div class="d-flex justify-content-start">
+          <div v-for="(meme, index) in memes" :key="index">
+            <meme-tile
+              :meme="meme"
+              :resource-path="resourcePath"
+              :allow-hover="true"
+              @selected="meme_OnClick"
+            />
+          </div>
+        </div>
+      </div>
 
-  <h1>These are the currently supported memes:</h1>
-  <div v-for="(meme, index) in memes" :key="index">
-    <p>{{ meme.name }}</p>
-    <img style="max-width: 200px" :src="getFileSrc(meme.image_path)" />
-  </div>
+      <br />
 
-  <br />
+      <!-- <div class="d-flex justify-content-center">
+        <select
+          class="form-control w-quarter"
+          v-model="selected"
+          @change="onSelect"
+        >
+          <option disabled value="">Please select one</option>
+          <option v-for="(meme, index) in memes" :key="index" :value="index">
+            {{ meme.formatName() }}
+          </option>
+        </select>
+      </div> -->
 
-  <select v-model="selected" @change="onSelect">
-    <option disabled value="">Please select one</option>
-    <option v-for="(meme, index) in memes" :key="index" :value="index">
-      {{ meme.name }}
-    </option>
-  </select>
-
-  <div v-if="selected != null">
-    <p v-for="(text, index) in memes[selected].text_instances" :key="index">
-      <input type="text" @change="onChange($event.target.value, index)" />
-    </p>
-    <button type="button" @click="onSubmit">Submit</button>
+      <div v-if="selected != null">
+        <div class="d-flex justify-content-center">
+          <meme-tile :meme="selected" :resourcePath="resourcePath" />
+        </div>
+        <p v-for="(text, index) in selected.text_instances" :key="index">
+          <input type="text" @change="onChange($event.target.value, index)" />
+        </p>
+        <div class="d-flex justify-content-center">
+          <button class="btn" type="button" @click="onCancel">Cancel</button>
+          <button class="btn btn-primary" type="button" @click="onSubmit">
+            Submit
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
 import { Vue, Options } from 'vue-class-component';
-import { invoke, convertFileSrc } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/tauri';
 import { resourceDir } from '@tauri-apps/api/path';
 import { Dir, readTextFile } from '@tauri-apps/api/fs';
 import { Input, MemeRecord } from './classes';
+import MemeTile from './meme-tile.vue';
 require('halfmoon/css/halfmoon-variables.min.css');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const halfmoon = require('halfmoon');
 
 @Options({
+  components: {
+    MemeTile,
+  },
   data() {
     return {
       resourcePath: '',
@@ -49,16 +95,12 @@ const halfmoon = require('halfmoon');
       await readTextFile('assets/memes.json', {
         dir: Dir.Resource,
       })
-    ) as MemeRecord[];
+    ).map((x: MemeRecord) => {
+      return new MemeRecord(x);
+    });
     this.resourcePath = await resourceDir();
   },
   methods: {
-    onSelect() {
-      this.input.name = this.memes[this.selected].name;
-      this.input.text_input = new Array<string>(
-        this.memes[this.selected].text_instances.length
-      );
-    },
     onChange(text: string, index: number) {
       this.input.text_input[index] = text;
     },
@@ -69,15 +111,17 @@ const halfmoon = require('halfmoon');
         console.log(result);
       });
     },
-    getFileSrc(filePath: string) {
-      if (this.resourcePath == '') {
-        return '';
-      }
-
-      const path = `${this.resourcePath}assets${filePath}`;
-
-      console.log(path);
-      return convertFileSrc(path.replace('\\\\?\\', ''));
+    onCancel() {
+      this.input = new Input();
+      this.selected = null;
+    },
+    meme_OnClick(meme: MemeRecord) {
+      this.selected = meme;
+      this.input.name = meme.name;
+      this.input.text_input = new Array<string>(meme.text_instances.length);
+    },
+    toggleSidebar() {
+      halfmoon.toggleSidebar();
     },
   },
 })
@@ -91,6 +135,10 @@ export default class App extends Vue {}
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
+}
+
+.menu {
+  padding-top: 0.4rem;
 }
 
 // nav {

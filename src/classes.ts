@@ -13,6 +13,10 @@ export class MemeRecord {
   text_color: [number, number, number] = [0, 0, 0];
   text_scale: [number, number] = [1, 1];
 
+  public formatName(): string {
+    return this.name.replace('-', ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  }
+
   constructor(value?: Partial<MemeRecord>) {
     Object.assign(this, value);
   }

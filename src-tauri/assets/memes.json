@@ -1,7 +1,7 @@
 [
   {
     "name": "flextape",
-    "image_path": "/memes/flextape.jpg",
+    "image_path": "/templates/flextape.jpg",
     "text_instances": [
       [
         1798,
@@ -26,7 +26,7 @@
   },
   {
     "name": "sword",
-    "image_path": "/memes/sword.jpg",
+    "image_path": "/templates/sword.jpg",
     "text_instances": [
       [
         57,
@@ -50,8 +50,8 @@
     ]
   },
   {
-    "name": "uselesspaper",
-    "image_path": "/memes/uselesspaper.jpg",
+    "name": "useless-paper",
+    "image_path": "/templates/uselesspaper.jpg",
     "text_instances": [
       [
         87,

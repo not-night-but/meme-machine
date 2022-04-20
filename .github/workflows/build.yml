@@ -41,7 +41,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       with:
         name: linux artifacts
-        path: ./src-tauri/target/release/bundle/appimage/*
+        path: ./src-tauri/target/release/bundle/appimage/meme-machine_*.AppImage
     - uses: actions/upload-artifact@v2
       if: matrix.os == 'windows-latest'
       with:
