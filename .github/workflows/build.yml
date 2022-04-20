@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [windows-latest, macos-latest]
+        os: [ubuntu-latest windows-latest, macos-latest]
     
     steps:
     - uses: actions/checkout@v3
@@ -27,9 +27,28 @@ jobs:
     - name: Install packages
       run: npm install
 
+    - name: Install ubuntu deps
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt-get install -y libwebkit2gtk-4.0-dev libgtk-3-dev libappindicator3-dev librsvg2-dev 
+
     - name: Build Vue
       run: npm run build
         
     - name: Build Tauri
       run: npm run tauri build
       
+    - uses: actions/upload-artifact@v2
+      if: matrix.platform == 'ubuntu-latest'
+      with:
+        name: linux artifacts
+        path: ./src-tauri/target/release/bundle/appimage/meme_machine_*.AppImage.*
+    - uses: actions/upload-artifact@v2
+      if: matrix.platform == 'windows-latest'
+      with:
+        name: windows artifacts
+        path: ./src-tauri/target/release/bundle/msi/*
+    - uses: actions/upload-artifact@v2
+      if: matrix.platform == 'macos-latest'
+      with:
+        name: macos artifacts
+        path: ./src-tauri/target/release/bundle/macos/meme_machine.app.tar.*
