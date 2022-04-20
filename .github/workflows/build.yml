@@ -38,17 +38,17 @@ jobs:
       run: npm run tauri build
       
     - uses: actions/upload-artifact@v2
-      if: matrix.platform == 'ubuntu-latest'
+      if: matrix.os == 'ubuntu-latest'
       with:
         name: linux artifacts
         path: ./src-tauri/target/release/bundle/appimage/meme_machine_*.AppImage.*
     - uses: actions/upload-artifact@v2
-      if: matrix.platform == 'windows-latest'
+      if: matrix.os == 'windows-latest'
       with:
         name: windows artifacts
         path: ./src-tauri/target/release/bundle/msi/*
     - uses: actions/upload-artifact@v2
-      if: matrix.platform == 'macos-latest'
+      if: matrix.os == 'macos-latest'
       with:
         name: macos artifacts
         path: ./src-tauri/target/release/bundle/macos/meme_machine.app.tar.*
