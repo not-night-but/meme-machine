@@ -23,6 +23,9 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 16.x
+        
+    - name: Install packages
+      run: npm install
 
     - name: Build Vue
       run: npm run build
