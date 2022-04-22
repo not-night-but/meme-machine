@@ -5,7 +5,7 @@
     @click="onClick"
   >
     <img class="w-200 h-150 rounded" style="object-fit: cover" :src="path" />
-    <div class="content">
+    <div class="content" v-if="showTitle">
       <h4 class="content-title">{{ meme.formatName() }}</h4>
     </div>
   </div>
@@ -21,11 +21,12 @@ import { MemeRecord } from './classes';
   props: {
     meme: {
       type: MemeRecord,
-      required: true,
+      required: false,
+      default: null,
     },
     resourcePath: {
       type: String,
-      required: true,
+      required: false,
       default: '',
     },
     allowHover: {
@@ -33,15 +34,28 @@ import { MemeRecord } from './classes';
       required: false,
       default: false,
     },
+    showTitle: {
+      type: Boolean,
+      required: false,
+      default: true,
+    },
+    fullPath: {
+      type: String,
+      required: false,
+      default: null,
+    },
   },
   emits: ['selected'],
   computed: {
     path() {
-      if (this.resourcePath == '') {
+      if (this.resourcePath == '' && this.fullPath == null) {
         return '';
       }
 
-      const path = `${this.resourcePath}assets${this.meme.image_path}`;
+      const path =
+        this.fullPath == null
+          ? `${this.resourcePath}assets${this.meme.image_path}`
+          : this.fullPath;
       return convertFileSrc(path.replace('\\\\?\\', ''));
     },
   },
@@ -52,7 +66,7 @@ import { MemeRecord } from './classes';
   },
   methods: {
     onClick() {
-      this.$emit('selected', this.meme);
+      this.$emit('selected', this.fullPath == null ? this.meme : this.fullPath);
     },
   },
 })

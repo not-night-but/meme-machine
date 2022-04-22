@@ -22,7 +22,8 @@
         "icons/icon.ico"
       ],
       "resources": [
-        "assets/*"
+        "assets/*",
+        "memes/*"
       ],
       "externalBin": [],
       "copyright": "",
@@ -54,13 +55,15 @@
       "all": true,
       "fs": {
         "scope": [
-          "$RESOURCE/assets/*"
+          "$RESOURCE/assets/*",
+          "$RESOURCE/memes/*"
         ]
       },
       "protocol": {
         "asset": true,
         "assetScope": [
-          "$RESOURCE/assets/*"
+          "$RESOURCE/assets/*",
+          "$RESOURCE/memes/*"
         ]
       }
     },

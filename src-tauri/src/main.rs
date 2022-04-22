@@ -4,8 +4,8 @@
 )]
 
 use std::{
-    fs::File,
-    io::{self, BufReader, Read},
+    fs::{File, OpenOptions},
+    io::{self, BufRead, BufReader, BufWriter, Read, Write},
     ops::Add,
     path::Path,
 };
@@ -14,8 +14,8 @@ use image::{io::Reader, DynamicImage, ImageError, Rgba};
 use imageproc::drawing::draw_text_mut;
 use rusttype::{Font, Scale};
 use serde::{Deserialize, Serialize};
-use tauri::api::path::download_dir;
 use tauri::InvokeError;
+use uuid::Uuid;
 
 #[tauri::command]
 fn create_meme(app_handle: tauri::AppHandle, input: Input) -> Result<(), Error> {
@@ -25,22 +25,32 @@ fn create_meme(app_handle: tauri::AppHandle, input: Input) -> Result<(), Error> 
         .unwrap()
         .to_string_lossy()
         .to_string()
-        .replace("\\\\?\\", "")
-        .add("/assets");
-    let save_path = download_dir()
-        .unwrap()
-        .to_string_lossy()
-        .to_string()
-        .replace("\\\\?\\", "")
-        .add(format!("/{}.jpg", input.name).as_str());
+        .replace("\\\\?\\", "");
+    let asset_dir = resource_dir
+        .clone()
+        .add(format!("{sep}assets", sep = std::path::MAIN_SEPARATOR).as_str());
+    let meme_dir = resource_dir
+        .clone()
+        .add(format!("{sep}memes", sep = std::path::MAIN_SEPARATOR).as_str());
+    let save_path = meme_dir.clone().add(
+        format!(
+            "{sep}{uuid}.jpg",
+            uuid = Uuid::new_v4().to_string(),
+            sep = std::path::MAIN_SEPARATOR,
+        )
+        .as_str(),
+    );
 
-    println!("{}", resource_dir);
-    let mut meme = Meme::new(input.text_input, input.name, &resource_dir)?;
-    meme.apply_text(&resource_dir)?;
+    let mut user_memes = get_user_memes(&meme_dir);
+    let mut meme = Meme::new(input.text_input, input.name, &asset_dir)?;
+    meme.apply_text(&asset_dir)?;
     meme.image
         .to_rgba8()
-        .save(save_path)
+        .save(save_path.clone())
         .expect("Error saving file");
+
+    user_memes.push(save_path);
+    update_user_memes(user_memes, &meme_dir);
 
     Ok(())
 }
@@ -50,6 +60,40 @@ fn main() {
         .invoke_handler(tauri::generate_handler![create_meme])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+fn get_user_memes(meme_dir: &String) -> Vec<String> {
+    let file_name = format!(
+        "{dir}{sep}user_memes.json",
+        dir = meme_dir,
+        sep = std::path::MAIN_SEPARATOR
+    );
+    let file = File::open(file_name).unwrap();
+    let mut reader = BufReader::new(file);
+    let mut buf = vec![];
+
+    // Use read_until to read until EOF.
+    reader.read_until(u8::MIN, &mut buf);
+
+    // Convert vector of bytes to string.
+    let data = String::from_utf8(buf).unwrap();
+    return serde_json::from_str(&data).unwrap();
+}
+
+fn update_user_memes(user_memes: Vec<String>, meme_dir: &String) {
+    let file_name = format!(
+        "{dir}{sep}user_memes.json",
+        dir = meme_dir,
+        sep = std::path::MAIN_SEPARATOR
+    );
+    let file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(file_name)
+        .unwrap();
+    let mut writer = BufWriter::new(file);
+    let data = serde_json::to_string(&user_memes).unwrap();
+    writer.write_all(data.as_bytes()).unwrap();
 }
 
 #[derive(Deserialize)]
@@ -69,7 +113,7 @@ pub struct MemeRecord {
 
 impl MemeRecord {
     pub fn get_memes(path: &Path) -> Vec<MemeRecord> {
-        let mut file = File::open(path).expect("Expected file called 'memes.json'");
+        let mut file = File::open(path).expect("Expected file called 'templates.json'");
         let mut buff = String::new();
         if let Ok(_) = file.read_to_string(&mut buff) {
             serde_json::from_str::<Vec<MemeRecord>>(&buff).expect("Error obtaining meme records")
@@ -91,7 +135,10 @@ impl Meme {
         name: String,
         resource_dir: &String,
     ) -> Result<Self, Error> {
-        let memes = MemeRecord::get_memes(Path::new(&resource_dir.clone().add("/memes.json")));
+        let memes =
+            MemeRecord::get_memes(Path::new(&resource_dir.clone().add(
+                format!("{sep}templates.json", sep = std::path::MAIN_SEPARATOR).as_str(),
+            )));
         let record = memes.iter().find(|meme| meme.name == name);
         if let Some(record) = record {
             let image =
@@ -117,7 +164,9 @@ impl Meme {
             x: self.record.text_scale.0,
             y: self.record.text_scale.1,
         };
-        let font = resource_dir.clone().add("/Nasa21-l23X.ttf");
+        let font = resource_dir
+            .clone()
+            .add(format!("{sep}Nasa21-l23X.ttf", sep = std::path::MAIN_SEPARATOR).as_str());
         let mut reader = BufReader::new(File::open(font).expect("Error finding font"));
         let mut buffer = Vec::new();
         reader.read_to_end(&mut buffer)?;
