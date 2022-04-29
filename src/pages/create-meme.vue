@@ -1,7 +1,7 @@
 <template>
   <div v-if="selected == null">
     <div class="d-flex justify-content-start">
-      <div v-for="(meme, index) in memes" :key="index">
+      <div class="col-2" v-for="(meme, index) in memes" :key="index">
         <meme-tile
           :meme="meme"
           :resource-path="resourcePath"
@@ -30,11 +30,11 @@
 
 <script lang="ts">
 import { Vue, Options } from 'vue-class-component';
-import MemeTile from './meme-tile.vue';
+import MemeTile from '../components/tiles/meme-tile.vue';
 import { invoke } from '@tauri-apps/api/tauri';
-import { resourceDir } from '@tauri-apps/api/path';
+import { resourceDir, pictureDir } from '@tauri-apps/api/path';
 import { Dir, readTextFile } from '@tauri-apps/api/fs';
-import { Input, MemeRecord } from './classes';
+import { Input, MemeRecord } from '../classes';
 
 require('halfmoon/css/halfmoon-variables.min.css');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -62,6 +62,8 @@ const halfmoon = require('halfmoon');
       return new MemeRecord(x);
     });
     this.resourcePath = await resourceDir();
+    let dir: string = await pictureDir();
+    console.log(dir);
   },
   methods: {
     onChange(text: string, index: number) {
@@ -71,6 +73,7 @@ const halfmoon = require('halfmoon');
       invoke('create_meme', {
         input: this.input,
       });
+      this.onCancel();
     },
     onCancel() {
       this.input = new Input();

@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
-import CreateMeme from '../create-meme.vue';
+import CreateMeme from '../pages/create-meme.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -10,7 +10,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/memes",
     name: "memes",
-    component: () => import("../user-memes.vue"),
+    component: () => import("../pages/user-memes.vue"),
   }
   // {
   //   path: "/about",

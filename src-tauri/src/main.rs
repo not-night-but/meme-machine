@@ -4,7 +4,7 @@
 )]
 
 use std::{
-    fs::{File, OpenOptions},
+    fs::{self, File, OpenOptions},
     io::{self, BufRead, BufReader, BufWriter, Read, Write},
     ops::Add,
     path::Path,
@@ -29,19 +29,22 @@ fn create_meme(app_handle: tauri::AppHandle, input: Input) -> Result<(), Error> 
     let asset_dir = resource_dir
         .clone()
         .add(format!("{sep}assets", sep = std::path::MAIN_SEPARATOR).as_str());
-    let meme_dir = resource_dir
-        .clone()
-        .add(format!("{sep}memes", sep = std::path::MAIN_SEPARATOR).as_str());
-    let save_path = meme_dir.clone().add(
-        format!(
-            "{sep}{uuid}.jpg",
-            uuid = Uuid::new_v4().to_string(),
-            sep = std::path::MAIN_SEPARATOR,
-        )
-        .as_str(),
-    );
+    let app_dir = app_handle
+        .path_resolver()
+        .app_dir()
+        .unwrap()
+        .to_string_lossy()
+        .to_string()
+        .replace("\\\\?\\", "");
 
-    let mut user_memes = get_user_memes(&meme_dir);
+    let mut save_path = app_dir
+        .clone()
+        .add(format!("{sep}memes{sep}", sep = std::path::MAIN_SEPARATOR).as_str());
+
+    fs::create_dir_all(save_path.clone()).expect("Error creating directory");
+    save_path = save_path.add(format!("{}.png", Uuid::new_v4()).as_str());
+
+    let mut user_memes = get_user_memes(&app_dir);
     let mut meme = Meme::new(input.text_input, input.name, &asset_dir)?;
     meme.apply_text(&asset_dir)?;
     meme.image
@@ -50,7 +53,7 @@ fn create_meme(app_handle: tauri::AppHandle, input: Input) -> Result<(), Error> 
         .expect("Error saving file");
 
     user_memes.push(save_path);
-    update_user_memes(user_memes, &meme_dir);
+    update_user_memes(user_memes, &app_dir);
 
     Ok(())
 }
@@ -63,12 +66,22 @@ fn main() {
 }
 
 fn get_user_memes(meme_dir: &String) -> Vec<String> {
+    fs::create_dir_all(format!("{}{}", meme_dir, std::path::MAIN_SEPARATOR))
+        .expect("Error creating directory");
+
     let file_name = format!(
         "{dir}{sep}user_memes.json",
         dir = meme_dir,
         sep = std::path::MAIN_SEPARATOR
     );
-    let file = File::open(file_name).unwrap();
+    println!("{}", file_name);
+
+    let file = OpenOptions::new()
+        .write(true)
+        .read(true)
+        .create(true)
+        .open(file_name)
+        .unwrap();
     let mut reader = BufReader::new(file);
     let mut buf = vec![];
 
@@ -77,6 +90,9 @@ fn get_user_memes(meme_dir: &String) -> Vec<String> {
 
     // Convert vector of bytes to string.
     let data = String::from_utf8(buf).unwrap();
+    if data.is_empty() {
+        return Vec::new();
+    }
     return serde_json::from_str(&data).unwrap();
 }
 

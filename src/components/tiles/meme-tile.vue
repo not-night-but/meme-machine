@@ -1,11 +1,11 @@
 <template>
   <div
-    class="card p-5 meme-tile"
+    class="card p-0 meme-tile"
     :class="{ hover: allowHover }"
     @click="onClick"
   >
-    <img class="w-200 h-150 rounded" style="object-fit: cover" :src="path" />
-    <div class="content" v-if="showTitle">
+    <img class="img-fluid h-150 rounded" :src="path" />
+    <div class="content p-0">
       <h4 class="content-title">{{ meme.formatName() }}</h4>
     </div>
   </div>
@@ -14,48 +14,33 @@
 <script lang="ts">
 import { convertFileSrc } from '@tauri-apps/api/tauri';
 import { Options, Vue } from 'vue-class-component';
-import { MemeRecord } from './classes';
+import { MemeRecord } from '../../classes';
 
 @Options({
   name: 'meme-tile',
   props: {
     meme: {
       type: MemeRecord,
-      required: false,
-      default: null,
+      required: true,
     },
     resourcePath: {
       type: String,
-      required: false,
-      default: '',
+      required: true,
     },
     allowHover: {
       type: Boolean,
       required: false,
       default: false,
     },
-    showTitle: {
-      type: Boolean,
-      required: false,
-      default: true,
-    },
-    fullPath: {
-      type: String,
-      required: false,
-      default: null,
-    },
   },
   emits: ['selected'],
   computed: {
     path() {
-      if (this.resourcePath == '' && this.fullPath == null) {
+      if (this.resourcePath == '') {
         return '';
       }
 
-      const path =
-        this.fullPath == null
-          ? `${this.resourcePath}assets${this.meme.image_path}`
-          : this.fullPath;
+      const path = `${this.resourcePath}assets${this.meme.image_path}`;
       return convertFileSrc(path.replace('\\\\?\\', ''));
     },
   },
@@ -66,7 +51,7 @@ import { MemeRecord } from './classes';
   },
   methods: {
     onClick() {
-      this.$emit('selected', this.fullPath == null ? this.meme : this.fullPath);
+      this.$emit('selected', this.meme);
     },
   },
 })
