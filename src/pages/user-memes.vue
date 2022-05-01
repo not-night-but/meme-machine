@@ -24,18 +24,14 @@
 </template>
 
 <script lang="ts">
-import { Dir, readTextFile } from '@tauri-apps/api/fs';
+import { invoke } from '@tauri-apps/api/tauri';
 import { Vue, Options } from 'vue-class-component';
 import UserMemeTile from '../components/tiles/user-meme-tile.vue';
 import GenericModal from '../components/modals/generic-modal.vue';
 
 @Options({
   async mounted() {
-    this.user_memes = JSON.parse(
-      await readTextFile('user_memes.json', {
-        dir: Dir.App,
-      })
-    );
+    this.user_memes = await invoke('get_user_memes');
   },
   components: { UserMemeTile, GenericModal },
   data() {
@@ -47,7 +43,6 @@ import GenericModal from '../components/modals/generic-modal.vue';
   },
   methods: {
     onSelect(path: string) {
-      console.log(path);
       this.selectedPath = path;
       this.showModal = true;
     },

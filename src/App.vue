@@ -10,7 +10,7 @@
           <i class="fa-solid fa-bars"></i>
         </button>
         <span class="navbar-brand">Meme Machine</span>
-        <span class="navbar-text text-monospace">v0.5.0</span>
+        <span class="navbar-text text-monospace">v0.6.0</span>
       </div>
     </div>
     <div class="sidebar">

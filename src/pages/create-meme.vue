@@ -32,8 +32,7 @@
 import { Vue, Options } from 'vue-class-component';
 import MemeTile from '../components/tiles/meme-tile.vue';
 import { invoke } from '@tauri-apps/api/tauri';
-import { resourceDir, pictureDir } from '@tauri-apps/api/path';
-import { Dir, readTextFile } from '@tauri-apps/api/fs';
+import { resourceDir } from '@tauri-apps/api/path';
 import { Input, MemeRecord } from '../classes';
 
 require('halfmoon/css/halfmoon-variables.min.css');
@@ -54,16 +53,13 @@ const halfmoon = require('halfmoon');
   },
   async mounted() {
     halfmoon.onDOMContentLoaded();
-    this.memes = JSON.parse(
-      await readTextFile('assets/templates.json', {
-        dir: Dir.Resource,
-      })
-    ).map((x: MemeRecord) => {
-      return new MemeRecord(x);
-    });
+    this.memes = ((await invoke('get_templates')) as MemeRecord[]).map(
+      (meme) => {
+        return new MemeRecord(meme);
+      }
+    );
+    console.log(this.memes);
     this.resourcePath = await resourceDir();
-    let dir: string = await pictureDir();
-    console.log(dir);
   },
   methods: {
     onChange(text: string, index: number) {

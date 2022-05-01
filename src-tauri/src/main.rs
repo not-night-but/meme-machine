@@ -5,20 +5,201 @@
 
 use std::{
     fs::{self, File, OpenOptions},
-    io::{self, BufRead, BufReader, BufWriter, Read, Write},
+    io::{self, BufRead, BufReader, Read},
     ops::Add,
     path::Path,
+    sync::Mutex,
 };
 
 use image::{io::Reader, DynamicImage, ImageError, Rgba};
 use imageproc::drawing::draw_text_mut;
+use rusqlite::{params, Connection, Params};
 use rusttype::{Font, Scale};
 use serde::{Deserialize, Serialize};
-use tauri::InvokeError;
+use tauri::{InvokeError, State};
 use uuid::Uuid;
 
+struct AppState {
+    initialized: Mutex<bool>,
+    conn: Mutex<Option<DbConnection>>,
+}
+
+impl AppState {
+    pub fn new() -> Self {
+        Self {
+            initialized: Mutex::new(false),
+            conn: Mutex::new(None),
+        }
+    }
+    pub fn check(&self, app_handle: &tauri::AppHandle) {
+        let mut initialized = self.initialized.lock().unwrap();
+        if !*initialized {
+            let app_dir = app_handle
+                .path_resolver()
+                .app_dir()
+                .unwrap()
+                .to_string_lossy()
+                .to_string()
+                .replace("\\\\?\\", "")
+                .add(std::path::MAIN_SEPARATOR.to_string().as_str());
+
+            fs::create_dir_all(app_dir.clone()).expect("Error creating directory");
+            let user_memes_path = format!("{}meme_machine.db", app_dir);
+
+            let initialize_database = !Path::new(user_memes_path.as_str()).exists();
+
+            // Create connections to database.
+            let mut conn = self.conn.lock().unwrap();
+            *conn = Some(DbConnection::new(user_memes_path.as_str()));
+
+            // Initialize database if they were just created.
+            if initialize_database {
+                if let Some(conn) = &*conn {
+                    let file_name = app_handle
+                        .path_resolver()
+                        .resource_dir()
+                        .unwrap()
+                        .to_string_lossy()
+                        .to_string()
+                        .replace("\\\\?\\", "")
+                        .add(
+                            format!(
+                                "{sep}assets{sep}initialize_db.sql",
+                                sep = std::path::MAIN_SEPARATOR
+                            )
+                            .as_str(),
+                        );
+
+                    let file = OpenOptions::new().read(true).open(file_name).unwrap();
+                    let mut reader = BufReader::new(file);
+                    let mut buf = vec![];
+
+                    // Use read_until to read until EOF.
+                    reader
+                        .read_until(u8::MIN, &mut buf)
+                        .expect("Error reading initialize_db.sql");
+
+                    // Convert vector of bytes to string.
+                    let init_query = String::from_utf8(buf).unwrap();
+
+                    for query in init_query.split(";") {
+                        if query.trim().is_empty() {
+                            continue;
+                        }
+                        conn.raw_query(query, params![]);
+                    }
+                }
+            }
+        }
+
+        *initialized = true;
+    }
+}
+
+struct DbConnection {
+    conn: Connection,
+}
+
+impl DbConnection {
+    pub fn new(path: &str) -> Self {
+        Self {
+            conn: Connection::open(path).expect("Error opening database"),
+        }
+    }
+
+    pub fn raw_query<P>(&self, query: &str, params: P)
+    where
+        P: Params,
+    {
+        self.conn.execute(query, params).unwrap();
+    }
+
+    pub fn insert<P>(&self, table: &str, columns: Vec<&str>, params: P)
+    where
+        P: Params,
+    {
+        let mut values = "(".to_owned();
+        let mut cols = "(".to_owned();
+        for i in 0..columns.len() {
+            values = format!("{}${}, ", values, i + 1);
+            cols = format!("{}{}, ", cols, columns[i]);
+        }
+        values = format!("{})", values.trim_end_matches(", "));
+        cols = format!("{})", cols.trim_end_matches(", "));
+        self.conn
+            .execute(
+                format!("INSERT INTO {} {} VALUES {}", table, cols, values).as_str(),
+                params,
+            )
+            .expect("Error inserting into database");
+    }
+
+    pub fn get_user_memes(&self) -> Result<Vec<String>, Error> {
+        Ok(self
+            .conn
+            .prepare("SELECT path FROM memes")?
+            .query_map([], |row| row.get(0))?
+            .map(|path| path.unwrap())
+            .collect())
+    }
+
+    pub fn get_templates(&self) -> Result<Vec<MemeRecord>, Error> {
+        Ok(self
+            .conn
+            .prepare(
+                "SELECT name, image_path, text_instances, text_color, text_scale FROM templates",
+            )?
+            .query_map([], |row| {
+                Ok(MemeRecord {
+                    name: row.get(0)?,
+                    image_path: row.get(1)?,
+                    text_instances: serde_json::from_str(row.get::<usize, String>(2)?.as_str())
+                        .unwrap(),
+                    text_color: serde_json::from_str(row.get::<usize, String>(3)?.as_str())
+                        .unwrap(),
+                    text_scale: serde_json::from_str(row.get::<usize, String>(4)?.as_str())
+                        .unwrap(),
+                })
+            })?
+            .map(|record| record.unwrap())
+            .collect())
+    }
+}
+
 #[tauri::command]
-fn create_meme(app_handle: tauri::AppHandle, input: Input) -> Result<(), Error> {
+fn get_user_memes(
+    app_handle: tauri::AppHandle,
+    state: State<AppState>,
+) -> Result<Vec<String>, Error> {
+    state.check(&app_handle);
+
+    (*state.conn.lock().unwrap())
+        .as_ref()
+        .unwrap()
+        .get_user_memes()
+}
+
+#[tauri::command]
+fn get_templates(
+    app_handle: tauri::AppHandle,
+    state: State<AppState>,
+) -> Result<Vec<MemeRecord>, Error> {
+    state.check(&app_handle);
+
+    (*state.conn.lock().unwrap())
+        .as_ref()
+        .unwrap()
+        .get_templates()
+}
+
+#[tauri::command]
+fn create_meme(
+    app_handle: tauri::AppHandle,
+    state: State<AppState>,
+    input: Input,
+) -> Result<(), Error> {
+    state.check(&app_handle);
+
     let resource_dir = app_handle
         .path_resolver()
         .resource_dir()
@@ -44,7 +225,6 @@ fn create_meme(app_handle: tauri::AppHandle, input: Input) -> Result<(), Error> 
     fs::create_dir_all(save_path.clone()).expect("Error creating directory");
     save_path = save_path.add(format!("{}.png", Uuid::new_v4()).as_str());
 
-    let mut user_memes = get_user_memes(&app_dir);
     let mut meme = Meme::new(input.text_input, input.name, &asset_dir)?;
     meme.apply_text(&asset_dir)?;
     meme.image
@@ -52,64 +232,26 @@ fn create_meme(app_handle: tauri::AppHandle, input: Input) -> Result<(), Error> 
         .save(save_path.clone())
         .expect("Error saving file");
 
-    user_memes.push(save_path);
-    update_user_memes(user_memes, &app_dir);
+    (*state.conn.lock().unwrap()).as_ref().unwrap().raw_query(
+        r#"
+        INSERT INTO memes (path) VALUES (?);
+        "#,
+        params![save_path],
+    );
 
     Ok(())
 }
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![create_meme])
+        .invoke_handler(tauri::generate_handler![
+            create_meme,
+            get_user_memes,
+            get_templates
+        ])
+        .manage(AppState::new())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-}
-
-fn get_user_memes(meme_dir: &String) -> Vec<String> {
-    fs::create_dir_all(format!("{}{}", meme_dir, std::path::MAIN_SEPARATOR))
-        .expect("Error creating directory");
-
-    let file_name = format!(
-        "{dir}{sep}user_memes.json",
-        dir = meme_dir,
-        sep = std::path::MAIN_SEPARATOR
-    );
-    println!("{}", file_name);
-
-    let file = OpenOptions::new()
-        .write(true)
-        .read(true)
-        .create(true)
-        .open(file_name)
-        .unwrap();
-    let mut reader = BufReader::new(file);
-    let mut buf = vec![];
-
-    // Use read_until to read until EOF.
-    reader.read_until(u8::MIN, &mut buf);
-
-    // Convert vector of bytes to string.
-    let data = String::from_utf8(buf).unwrap();
-    if data.is_empty() {
-        return Vec::new();
-    }
-    return serde_json::from_str(&data).unwrap();
-}
-
-fn update_user_memes(user_memes: Vec<String>, meme_dir: &String) {
-    let file_name = format!(
-        "{dir}{sep}user_memes.json",
-        dir = meme_dir,
-        sep = std::path::MAIN_SEPARATOR
-    );
-    let file = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .open(file_name)
-        .unwrap();
-    let mut writer = BufWriter::new(file);
-    let data = serde_json::to_string(&user_memes).unwrap();
-    writer.write_all(data.as_bytes()).unwrap();
 }
 
 #[derive(Deserialize)]
@@ -237,6 +379,7 @@ pub enum Error {
     IOError(String),
     ImageError(String),
     MemeError(String),
+    DbError(String),
 }
 
 impl From<io::Error> for Error {
@@ -254,6 +397,12 @@ impl From<ImageError> for Error {
 impl From<InvokeError> for Error {
     fn from(err: InvokeError) -> Self {
         Error::MemeError(format!("{:?}", err))
+    }
+}
+
+impl From<rusqlite::Error> for Error {
+    fn from(err: rusqlite::Error) -> Self {
+        Error::DbError(err.to_string())
     }
 }
 
