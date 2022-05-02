@@ -27,9 +27,12 @@ jobs:
     - name: Install packages
       run: npm install
 
-    - name: Install ubuntu deps
+    - name: Update Ubuntu
       if: matrix.os == 'ubuntu-latest'
       run: apt-get update
+
+    - name: Install ubuntu deps
+      if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get install -y libwebkit2gtk-4.0-dev libgtk-3-dev libappindicator3-dev librsvg2-dev
 
     - name: Build Vue
