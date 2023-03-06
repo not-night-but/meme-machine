@@ -1,25 +1,24 @@
 <template>
-  <div class="d-flex justify-content-start">
+  <div class="d-flex">
     <div v-for="(meme, index) in user_memes" :key="index">
-      <!-- <meme-tile :fullPath="meme" :allow-hover="true" :showTitle="false" /> -->
       <user-meme-tile :path="meme" @selected="onSelect" />
-      <GenericModal
-        :show="showModal"
-        @hide="showModal = false"
-        :name="'meme-modal'"
-      >
-        <template v-slot:title>
-          <h4>View Meme</h4>
-        </template>
-        <template v-slot:body>
-          <img
-            class="w-auto h-auto rounded"
-            style="object-fit: contain"
-            :src="selectedPath"
-          />
-        </template>
-      </GenericModal>
     </div>
+    <GenericModal
+      :show="showModal"
+      @hide="showModal = false"
+      :name="'meme-modal'"
+    >
+      <template v-slot:title>
+        <h4>View Meme</h4>
+      </template>
+      <template v-slot:body>
+        <img
+          class="w-auto h-auto rounded"
+          style="object-fit: contain"
+          :src="selectedPath"
+        />
+      </template>
+    </GenericModal>
   </div>
 </template>
 

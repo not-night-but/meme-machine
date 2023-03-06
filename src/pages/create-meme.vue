@@ -1,7 +1,7 @@
 <template>
   <div v-if="selected == null">
     <div class="d-flex justify-content-start">
-      <div class="col-2" v-for="(meme, index) in memes" :key="index">
+      <div v-for="(meme, index) in memes" :key="index">
         <meme-tile
           :meme="meme"
           :resource-path="resourcePath"

@@ -1,11 +1,11 @@
 <template>
   <div
-    class="card p-0 meme-tile"
+    class="meme-tile card p-0"
     :class="{ hover: allowHover }"
     @click="onClick"
   >
     <img class="img-fluid h-150 rounded" :src="path" />
-    <div class="content p-0">
+    <div class="content p-0 overflow-hidden" style="white-space: nowrap;">
       <h4 class="content-title">{{ meme.formatName() }}</h4>
     </div>
   </div>
@@ -60,16 +60,16 @@ export default class MemeTile extends Vue {}
 
 <style lang="scss" scoped>
 .meme-tile {
-  margin: 0;
-  margin-left: 0.5rem;
-  margin-right: 0.5rem;
+  width: 15rem;
+  margin-left: 2.5rem;
+  margin-right: 2.5rem;
   transition: all 100ms ease-in-out;
   &.hover {
     cursor: pointer;
     &:hover {
       background: hsl(214, 12%, 13%);
-      margin-top: -0.5rem;
-      margin-bottom: 0.5rem;
+      margin-top: -0.25rem;
+      margin-bottom: 0.25rem;
       box-shadow: 0 0.5rem 1rem 0 rgba(0, 0, 0, 0.3);
     }
   }
