@@ -1,11 +1,11 @@
 <template>
   <div class="d-flex">
     <div v-for="(meme, index) in user_memes" :key="index">
-      <user-meme-tile :path="meme" @selected="onSelect" />
+      <user-meme-tile :path="meme" @selected="onSelect" @download="onDownload"/>
     </div>
     <GenericModal
-      :show="showModal"
-      @hide="showModal = false"
+      :show="showMemeModal"
+      @hide="showMemeModal = false"
       :name="'meme-modal'"
     >
       <template v-slot:title>
@@ -18,6 +18,18 @@
             :src="selectedPath"
           />
         </div>
+      </template>
+    </GenericModal>
+    <GenericModal
+      :show="showDownloadModal"
+      @hide="showDownloadModal = false"
+      :name="'download-modal'"
+    >
+      <template v-slot:title>
+        <h4>Save Meme</h4>
+      </template>
+      <template v-slot:body>
+        <input type="file"/>
       </template>
     </GenericModal>
   </div>
@@ -37,15 +49,20 @@ import GenericModal from '../components/modals/generic-modal.vue';
   data() {
     return {
       user_memes: [],
-      showModal: false,
+      showMemeModal: false,
+      showDownloadModal: false,
       selectedPath: '',
     };
   },
   methods: {
     onSelect(path: string) {
       this.selectedPath = path;
-      this.showModal = true;
+      this.showMemeModal = true;
     },
+    onDownload(path: string) {
+      this.selectedPath = path;
+      this.showDownloadModal = true;
+    }
   },
   computed: {},
 })

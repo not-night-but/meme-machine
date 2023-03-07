@@ -10,7 +10,7 @@
           <i class="fa-solid fa-bars"></i>
         </button>
         <span class="navbar-brand">Meme Machine</span>
-        <span class="navbar-text text-monospace">v0.6.0</span>
+        <span class="navbar-text text-monospace">v{{getPackageVersion()}}</span>
       </div>
     </div>
     <div class="sidebar">
@@ -35,12 +35,17 @@
 import { Vue, Options } from 'vue-class-component';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const halfmoon = require('halfmoon');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const pjson = require('../package.json')
 
 @Options({
   methods: {
     toggleSidebar() {
       halfmoon.toggleSidebar();
     },
+    getPackageVersion() {
+      return pjson.version;
+    }
   },
 })
 export default class App extends Vue {}

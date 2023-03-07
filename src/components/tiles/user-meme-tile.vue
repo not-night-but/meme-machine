@@ -1,5 +1,5 @@
 <template>
-  <div class="card p-5 meme-tile" @click="onClick">
+  <div class="card p-5 meme-tile" @click.stop.prevent="onClick">
     <img
       class="w-200 h-150 rounded"
       style="object-fit: cover"
@@ -8,7 +8,7 @@
     <div class="position-relative download-button">
       <button
         class="btn btn-sm position-absolute bottom-0 right-0 mr-10 mb-5"
-        @click="$event.stopPropagation()"
+        @click.stop.prevent="downloadOnClick"
       >
         <i class="fa-solid fa-download"></i>
       </button>
@@ -32,6 +32,9 @@ import { Vue, Options } from 'vue-class-component';
     onClick() {
       this.$emit('selected', this.assetPath);
     },
+    downloadOnClick() {
+      this.$emit('download', this.assetPath);
+    }
   },
   computed: {
     assetPath() {
