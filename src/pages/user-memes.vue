@@ -12,11 +12,12 @@
         <h4>View Meme</h4>
       </template>
       <template v-slot:body>
-        <img
-          class="w-auto h-auto rounded"
-          style="object-fit: contain"
-          :src="selectedPath"
-        />
+        <div>
+          <img
+            class="user-meme rounded"
+            :src="selectedPath"
+          />
+        </div>
       </template>
     </GenericModal>
   </div>
@@ -52,4 +53,14 @@ export default class UserMemes extends Vue {}
 </script>
 
 <style lang="scss" scoped>
+  div {
+    .user-meme {
+      margin: auto;
+      display: block;
+      max-height: 40rem;
+      max-width: 40rem;
+      height: auto;
+      width: auto;
+    }
+  }
 </style>

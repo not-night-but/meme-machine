@@ -225,7 +225,19 @@ fn create_meme(
     fs::create_dir_all(save_path.clone()).expect("Error creating directory");
     save_path = save_path.add(format!("{}.png", Uuid::new_v4()).as_str());
 
-    let mut meme = Meme::new(input.text_input, input.name, &asset_dir)?;
+    let mut meme = if let Ok(templates) = (*state.conn.lock().unwrap())
+        .as_ref()
+        .unwrap()
+        .get_templates()
+    {
+        let template = templates
+            .iter()
+            .find(|template| template.name == input.name)
+            .unwrap();
+        Meme::new(input.text_input, template, &asset_dir)?
+    } else {
+        return Err(Error::MemeError("Something fucked up".to_string()));
+    };
     meme.apply_text(&asset_dir)?;
     meme.image
         .to_rgba8()
@@ -290,25 +302,16 @@ pub struct Meme {
 impl Meme {
     pub fn new(
         text_input: Vec<String>,
-        name: String,
+        template: &MemeRecord,
         resource_dir: &String,
     ) -> Result<Self, Error> {
-        let memes =
-            MemeRecord::get_memes(Path::new(&resource_dir.clone().add(
-                format!("{sep}templates.json", sep = std::path::MAIN_SEPARATOR).as_str(),
-            )));
-        let record = memes.iter().find(|meme| meme.name == name);
-        if let Some(record) = record {
-            let image =
-                Reader::open(resource_dir.clone().add(&record.image_path.clone()))?.decode()?;
-            Ok(Meme {
-                image,
-                text_input,
-                record: record.clone(),
-            })
-        } else {
-            Err(Error::MemeError("Error obtaining meme record".to_string()))
-        }
+        let image =
+            Reader::open(resource_dir.clone().add(&template.image_path.clone()))?.decode()?;
+        Ok(Meme {
+            image,
+            text_input,
+            record: template.clone(),
+        })
     }
 
     pub fn apply_text(&mut self, resource_dir: &String) -> Result<(), Error> {

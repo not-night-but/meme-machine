@@ -60,16 +60,17 @@ export default class MemeTile extends Vue {}
 
 <style lang="scss" scoped>
 .meme-tile {
-  width: 15rem;
-  margin-left: 2.5rem;
-  margin-right: 2.5rem;
+  width: 20rem;
+  margin: 0;
+  margin-left: 1.0rem;
+  margin-right: 1.0rem;
   transition: all 100ms ease-in-out;
   &.hover {
     cursor: pointer;
     &:hover {
       background: hsl(214, 12%, 13%);
-      margin-top: -0.25rem;
-      margin-bottom: 0.25rem;
+      margin-top: -0.5rem;
+      margin-bottom: 0.5rem;
       box-shadow: 0 0.5rem 1rem 0 rgba(0, 0, 0, 0.3);
     }
   }

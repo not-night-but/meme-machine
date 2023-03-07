@@ -18,17 +18,11 @@
           <slot name="body">This is where the modal body goes.</slot>
         </p>
         <div class="text-right mt-20">
-          <!-- text-right = text-align: right, mt-20 = margin-top: 2rem (20px) -->
-          <a href="#" class="btn mr-5" role="button" @click="$emit('hide')"
-            >Close</a
-          >
-          <a
-            href="#"
-            class="btn btn-primary"
-            role="button"
-            @click="$emit('hide')"
-            >I understand</a
-          >
+          <slot name="buttons">
+            <a href="#" class="btn mr-5" role="button" @click="$emit('hide')" >
+              Close
+            </a>
+          </slot>
         </div>
       </div>
     </div>
